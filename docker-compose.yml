@@ -1,0 +1,136 @@
+services:
+  postgres-db:
+    image: postgres
+    restart: always
+    container_name: postgres-db
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=evora_event_db
+    networks:
+      - evora-network
+
+  pg-admin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: pg-admin
+    ports:
+      - '15432:80'
+    depends_on:
+      - postgres-db
+    environment:
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+    networks:
+      - evora-network
+
+  mongo-db:
+    image: mongo:latest
+    restart: always
+    container_name: mongo-db
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: evora_user_db  # Database to be created on startup
+    networks:
+      - evora-network
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    container_name: mongo-express
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo-db
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongo-db
+    networks:
+      - evora-network
+
+
+
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761" ]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - evora-network
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+    depends_on:
+      eureka-server:
+        condition: service_started
+    networks:
+      - evora-network
+
+  user-service:
+    build:
+      dockerfile: Dockerfile
+      context: ./user-service
+    container_name: user-service
+    depends_on:
+      mongo-db:
+        condition: service_started
+      api-gateway:
+        condition: service_started
+    ports:
+      - '8082:8082'
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+    networks:
+      - evora-network
+
+  event-service:
+    build:
+      dockerfile: Dockerfile
+      context: ./event-service
+    container_name: event-service
+    restart: on-failure
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      api-gateway:
+        condition: service_started
+      user-service:
+        condition: service_started
+    ports:
+      - '8083:8083'
+    environment:
+      - DB_URL=jdbc:postgresql://postgres-db:5432/evora_event_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+    networks:
+      - evora-network
+
+networks:
+  evora-network:
+    driver: bridge

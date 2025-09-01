@@ -1,0 +1,18 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: USER-SERVICE
+  data:
+    mongodb:
+      authentication-database: admin
+      username: admin
+      password: password
+      database: evora_user_db
+      port: 27017
+      host: mongo-db
+      auto-index-creation: true
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
