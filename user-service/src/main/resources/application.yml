@@ -1,3 +1,5 @@
+jwt:
+  secret: ${JWT_KEY}
 server:
   port: 8082
 spring:
