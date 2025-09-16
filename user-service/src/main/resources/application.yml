@@ -8,13 +8,13 @@ spring:
   data:
     mongodb:
       authentication-database: admin
-      username: admin
-      password: password
+      username: ${DB_USER:admin}
+      password: ${DB_PASSWORD:password}
       database: evora_user_db
-      port: 27017
-      host: mongo-db
+      port: ${DB_PORT:27018}
+      host: ${DB_HOST:localhost}
       auto-index-creation: true
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
