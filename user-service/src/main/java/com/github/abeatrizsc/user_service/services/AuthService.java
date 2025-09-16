@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -24,6 +25,7 @@ public class AuthService {
     private final SecurityConfig securityConfig;
     private final UserService userService;
 
+    @Transactional
     public void register(RegisterRequestDto body) {
         Optional<User> user = userService.findUserByEmail(body.email());
         RoleEnum role = RoleEnum.valueOf(body.role().toUpperCase());

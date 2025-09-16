@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -21,6 +22,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository repository;
     private final SecurityConfig securityConfig;
+    private final HttpServletRequest request;
 
     public Optional<User> findUserByEmail(String email) {
         return repository.findByEmail(email);
@@ -34,8 +36,9 @@ public class UserService {
         repository.save(user);
     }
 
-    public UserResponseDto updateAuthenticatedUser(HttpServletRequest request, UpdateUserRequestDto updateDto) {
-        User user = findUserById(getAuthenticatedUserId(request));
+    @Transactional
+    public UserResponseDto updateAuthenticatedUser(UpdateUserRequestDto updateDto) {
+        User user = findUserById(getAuthenticatedUserId());
 
         if (isProvidedPasswordCorrect(updateDto.currentPassword(), user.getPassword())) {
             if (areDifferentPasswords(updateDto.passwordUpdated(), user.getPassword())) {
@@ -51,10 +54,29 @@ public class UserService {
         return new UserResponseDto(user.getName(), user.getEmail(), user.getRole(), user.getCustomerId());
     }
 
-    public void deleteAuthenticatedUser(HttpServletRequest request) {
-        User user = findUserById(getAuthenticatedUserId(request));
+    @Transactional
+    public void deleteAuthenticatedUser() {
+        User user = findUserById(getAuthenticatedUserId());
 
         repository.delete(user);
+    }
+
+    public String getAuthenticatedUserId() {
+        String userId = request.getHeader("X-User-Id");
+
+        if (userId == null) {
+            log.info("User service - getAuthenticatedUserId(): Header 'X-User-Id' is missing.");
+
+            throw new RequestException("An error occurred during the request and it was not possible to complete it.");
+        }
+
+        return userId;
+    }
+
+    public UserResponseDto getAuthenticatedUserInfo() {
+        User user = findUserById(getAuthenticatedUserId());
+
+        return new UserResponseDto(user.getName(), user.getEmail(), user.getRole(), user.getCustomerId());
     }
 
     public Boolean isProvidedPasswordCorrect(String providedPassword, String userPassword) {
@@ -71,23 +93,5 @@ public class UserService {
         }
 
         return !securityConfig.passwordEncoder().matches(newPassword, userPassword);
-    }
-
-    public String getAuthenticatedUserId(HttpServletRequest request) {
-        String userId = request.getHeader("X-User-Id");
-
-        if (userId == null) {
-            log.info("User service - getAuthenticatedUserId(): Header 'X-User-Id' is missing.");
-
-            throw new RequestException("An error occurred during the request and it was not possible to complete it.");
-        }
-
-        return userId;
-    }
-
-    public UserResponseDto getAuthenticatedUserInfo(HttpServletRequest request) {
-        User user = findUserById(getAuthenticatedUserId(request));
-
-        return new UserResponseDto(user.getName(), user.getEmail(), user.getRole(), user.getCustomerId());
     }
 }
