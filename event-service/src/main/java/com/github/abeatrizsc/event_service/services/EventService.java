@@ -13,9 +13,13 @@ import com.github.abeatrizsc.event_service.mappers.AddressMapper;
 import com.github.abeatrizsc.event_service.mappers.EventMapper;
 import com.github.abeatrizsc.event_service.repositories.AddressRepository;
 import com.github.abeatrizsc.event_service.repositories.EventRepository;
+import com.github.abeatrizsc.event_service.specifications.queryFilters.EventQueryFilter;
 import com.github.abeatrizsc.event_service.utils.AuthRequestUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,5 +111,10 @@ public class EventService {
     public Event getEventByIdAndCreatorId(String eventId, String creatorId) {
         log.info("Getting an event by id: {} and creator id: {}.", eventId, creatorId);
         return repository.findByIdAndCreatorId(eventId, creatorId).orElseThrow(() -> new NotFoundException("Event"));
+    }
+
+    public Page<Event> getAllEvents(EventQueryFilter eventFilter) {
+        Pageable pageable = PageRequest.of(eventFilter.getPage(), eventFilter.getItems());
+        return repository.findAll(eventFilter.toEspecification(), pageable);
     }
 }
