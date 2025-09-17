@@ -21,6 +21,11 @@ spring:
             - Path=/api/v1/auth/**
           filters:
             - AuthenticationFilter
+        - id: event-service-public
+          uri: lb://EVENT-SERVICE
+          predicates:
+            - Path=/api/v1/events/**
+            - Method=GET
         - id: event-service
           uri: lb://EVENT-SERVICE
           predicates:
