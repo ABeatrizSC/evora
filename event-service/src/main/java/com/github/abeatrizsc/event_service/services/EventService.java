@@ -8,7 +8,7 @@ import com.github.abeatrizsc.event_service.dtos.EventUpdateRequestDto;
 import com.github.abeatrizsc.event_service.dtos.ViaCepResponseDto;
 import com.github.abeatrizsc.event_service.enums.RoleEnum;
 import com.github.abeatrizsc.event_service.exceptions.NotFoundException;
-import com.github.abeatrizsc.event_service.exceptions.UnauthorizedEventCreationException;
+import com.github.abeatrizsc.event_service.exceptions.UnauthorizedActionException;
 import com.github.abeatrizsc.event_service.feign.ViaCepServiceClient;
 import com.github.abeatrizsc.event_service.mappers.AddressMapper;
 import com.github.abeatrizsc.event_service.mappers.EventMapper;
@@ -43,11 +43,7 @@ public class EventService {
 
         String creatorId = authRequestUtils.getAuthenticatedUserId();
 
-        RoleEnum creatorRole = RoleEnum.valueOf(authRequestUtils.getAuthenticatedUserRole().toUpperCase());
-
-        if (creatorRole != RoleEnum.CREATOR) {
-            throw new UnauthorizedEventCreationException("Participants cannot create an event.");
-        }
+        checkUserRole();
 
         Address address = insertEventAddress(body);
 
@@ -64,6 +60,8 @@ public class EventService {
     @Transactional
     public List<EventResponseDto> updateEventById(String eventId, EventUpdateRequestDto updateRequestDto) {
         log.info("Update event by id {} started", eventId);
+
+        checkUserRole();
 
         String creatorId = authRequestUtils.getAuthenticatedUserId();
 
@@ -82,6 +80,8 @@ public class EventService {
     public List<EventResponseDto> deleteEventById(String eventId) {
         log.info("Delete event id {} started", eventId);
 
+        checkUserRole();
+
         String creatorId = authRequestUtils.getAuthenticatedUserId();
 
         Event event = getEventByIdAndCreatorId(eventId, creatorId);
@@ -93,7 +93,7 @@ public class EventService {
         return getAllByCreatorId(creatorId);
     }
 
-    public Address insertEventAddress(EventRequestDto body) {
+    private Address insertEventAddress(EventRequestDto body) {
         Address address = addressRepository.findByPostalCode(body.postalCode());
 
         if (address == null) {
@@ -109,7 +109,7 @@ public class EventService {
         return address;
     }
 
-    public Event getEventByIdAndCreatorId(String eventId, String creatorId) {
+    private Event getEventByIdAndCreatorId(String eventId, String creatorId) {
         log.info("Getting an event by id: {} and creator id: {}.", eventId, creatorId);
         return repository.findByIdAndCreatorId(eventId, creatorId).orElseThrow(() -> new NotFoundException("Event"));
     }
@@ -121,6 +121,8 @@ public class EventService {
     }
 
     public List<EventResponseDto> getAllByCreatorId(String creatorId) {
+        checkUserRole();
+
         return repository.findAllByCreatorId(creatorId)
                 .stream()
                 .map(eventMapper::convertEntityToRequestDto)
@@ -129,5 +131,19 @@ public class EventService {
 
     public Event getEventById(String id) {
         return repository.findById(id).orElseThrow(() -> new NotFoundException("Event"));
+    }
+
+    public void checkUserRole() {
+        log.info("checkUserRole() started");
+
+        RoleEnum authenticatedUserRole = RoleEnum.valueOf(authRequestUtils.getAuthenticatedUserRole().toUpperCase());
+
+        if (authenticatedUserRole != RoleEnum.CREATOR) {
+            throw new UnauthorizedActionException(
+                    String.format("User with role %s is not authorized for this action.", authenticatedUserRole)
+            );
+        }
+
+        log.info("Success checkUserRole");
     }
 }

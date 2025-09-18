@@ -1,5 +1,6 @@
 package com.github.abeatrizsc.event_service.controllers;
 
+import com.github.abeatrizsc.event_service.domain.Event;
 import com.github.abeatrizsc.event_service.dtos.EventRequestDto;
 import com.github.abeatrizsc.event_service.dtos.EventResponseDto;
 import com.github.abeatrizsc.event_service.dtos.EventUpdateRequestDto;
@@ -44,5 +45,10 @@ public class EventController {
     @GetMapping
     public ResponseEntity<Page<EventResponseDto>> getAllEvents(EventQueryFilter filter) {
         return ResponseEntity.ok(service.getAllEvents(filter));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Event> getEventById(@PathVariable String id) {
+        return ResponseEntity.ok(service.getEventById(id));
     }
 }
