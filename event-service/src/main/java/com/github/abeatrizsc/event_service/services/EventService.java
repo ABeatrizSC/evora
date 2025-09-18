@@ -3,6 +3,7 @@ package com.github.abeatrizsc.event_service.services;
 import com.github.abeatrizsc.event_service.domain.Address;
 import com.github.abeatrizsc.event_service.domain.Event;
 import com.github.abeatrizsc.event_service.dtos.EventRequestDto;
+import com.github.abeatrizsc.event_service.dtos.EventResponseDto;
 import com.github.abeatrizsc.event_service.dtos.EventUpdateRequestDto;
 import com.github.abeatrizsc.event_service.dtos.ViaCepResponseDto;
 import com.github.abeatrizsc.event_service.enums.RoleEnum;
@@ -37,7 +38,7 @@ public class EventService {
     private final AddressMapper addressMapper;
 
     @Transactional
-    public List<Event> createEvent(EventRequestDto body) {
+    public List<EventResponseDto> createEvent(EventRequestDto body) {
         log.info("Create event started");
 
         String creatorId = authRequestUtils.getAuthenticatedUserId();
@@ -57,11 +58,11 @@ public class EventService {
         repository.save(event);
 
         log.info("Create event ended");
-        return repository.findAllByCreatorId(creatorId);
+        return getAllByCreatorId(creatorId);
     }
 
     @Transactional
-    public List<Event> updateEventById(String eventId, EventUpdateRequestDto updateRequestDto) {
+    public List<EventResponseDto> updateEventById(String eventId, EventUpdateRequestDto updateRequestDto) {
         log.info("Update event by id {} started", eventId);
 
         String creatorId = authRequestUtils.getAuthenticatedUserId();
@@ -74,11 +75,11 @@ public class EventService {
         repository.save(event);
 
         log.info("Update event by id {} ended", eventId);
-        return repository.findAllByCreatorId(creatorId);
+        return getAllByCreatorId(creatorId);
     }
 
     @Transactional
-    public List<Event> deleteEventById(String eventId) {
+    public List<EventResponseDto> deleteEventById(String eventId) {
         log.info("Delete event id {} started", eventId);
 
         String creatorId = authRequestUtils.getAuthenticatedUserId();
@@ -89,7 +90,7 @@ public class EventService {
 
         log.info("Delete event ended");
 
-        return repository.findAllByCreatorId(creatorId);
+        return getAllByCreatorId(creatorId);
     }
 
     public Address insertEventAddress(EventRequestDto body) {
@@ -113,8 +114,20 @@ public class EventService {
         return repository.findByIdAndCreatorId(eventId, creatorId).orElseThrow(() -> new NotFoundException("Event"));
     }
 
-    public Page<Event> getAllEvents(EventQueryFilter eventFilter) {
+    public Page<EventResponseDto> getAllEvents(EventQueryFilter eventFilter) {
         Pageable pageable = PageRequest.of(eventFilter.getPage(), eventFilter.getItems());
-        return repository.findAll(eventFilter.toEspecification(), pageable);
+        return repository.findAll(eventFilter.toEspecification(), pageable)
+                .map(eventMapper::convertEntityToRequestDto);
+    }
+
+    public List<EventResponseDto> getAllByCreatorId(String creatorId) {
+        return repository.findAllByCreatorId(creatorId)
+                .stream()
+                .map(eventMapper::convertEntityToRequestDto)
+                .toList();
+    }
+
+    public Event getEventById(String id) {
+        return repository.findById(id).orElseThrow(() -> new NotFoundException("Event"));
     }
 }
