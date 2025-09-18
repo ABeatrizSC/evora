@@ -34,9 +34,14 @@ public class RestControlAdvice {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RestErrorMessageDto(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED, "You don't have permission to perform this action."));
     }
 
-    @ExceptionHandler(ParticipantFieldsException.class)
-    public ResponseEntity<RestErrorMessageDto> handleParticipantFieldsException(ParticipantFieldsException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RestErrorMessageDto(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST, e.getMessage()));
+    @ExceptionHandler(UnauthorizedActionException.class)
+    public ResponseEntity<RestErrorMessageDto> handleUnauthorizedTicketPurchaseException(UnauthorizedActionException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RestErrorMessageDto(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED, e.getMessage()));
+    }
+
+    @ExceptionHandler(CancellationTicketPurchaseException.class)
+    public ResponseEntity<RestErrorMessageDto> handleCancellationTicketPurchaseException(CancellationTicketPurchaseException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RestErrorMessageDto(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED, e.getMessage()));
     }
 
     @ExceptionHandler(RequestException.class)

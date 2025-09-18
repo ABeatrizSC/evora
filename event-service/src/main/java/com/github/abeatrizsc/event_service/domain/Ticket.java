@@ -31,7 +31,7 @@ public class Ticket {
     @Column(name = "purchased_at", nullable = false)
     private LocalDateTime purchasedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 }

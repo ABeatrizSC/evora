@@ -18,7 +18,7 @@ public class AuthRequestUtils {
         String userId = request.getHeader("X-User-Id");
 
         if (userId == null) {
-            log.info("Event service - getAuthenticatedUserId(): Header 'X-User-Id' is missing.");
+            log.info("getAuthenticatedUserId(): Header 'X-User-Id' is missing.");
 
             throw new RequestException();
         }
@@ -31,7 +31,7 @@ public class AuthRequestUtils {
         log.info("Request user role: {}", userRole);
 
         if (userRole == null) {
-            log.info("Event service - getAuthenticatedUserId(): Header 'X-User-Role' is missing.");
+            log.info("getAuthenticatedUserId(): Header 'X-User-Role' is missing.");
 
             throw new RequestException();
         }
