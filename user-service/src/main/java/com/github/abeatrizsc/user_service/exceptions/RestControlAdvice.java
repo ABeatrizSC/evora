@@ -6,11 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,9 +33,19 @@ public class RestControlAdvice {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new RestErrorMessageDto(HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND, e.getMessage()));
     }
 
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<RestErrorMessageDto> handleAuthException(AuthException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new RestErrorMessageDto(HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND, e.getMessage()));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<RestErrorMessageDto> handleBadCredentialsException(BadCredentialsException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RestErrorMessageDto(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST, "Invalid login credentials."));
+    }
+
+    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    public ResponseEntity<RestErrorMessageDto> handleInternalAuthenticationServiceException(InternalAuthenticationServiceException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new RestErrorMessageDto(HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND, e.getMessage()));
     }
 
     @ExceptionHandler(JWTCreationException.class)
@@ -66,9 +78,20 @@ public class RestControlAdvice {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new RestErrorMessageDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
     }
 
+    @ExceptionHandler(AsaasServiceClientException.class)
+    public ResponseEntity<RestErrorMessageDto> handleAsaasServiceClientException(AsaasServiceClientException e) {
+        Map<String, Object> body = Map.of(
+                "error", e.getCode(),
+                "message", e.getDescription()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RestErrorMessageDto(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST, body.get("message").toString()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RestErrorMessageDto> handleGeneric(Exception e) {
         log.error(String.valueOf(e));
+        log.error("Generic handler caught exception: {}", e.getClass().getName(), e);
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new RestErrorMessageDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again."));
     }
 }

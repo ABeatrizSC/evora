@@ -3,9 +3,13 @@ package com.github.abeatrizsc.user_service.services;
 import com.github.abeatrizsc.user_service.domain.User;
 import com.github.abeatrizsc.user_service.dtos.UpdateUserRequestDto;
 import com.github.abeatrizsc.user_service.dtos.UserResponseDto;
+import com.github.abeatrizsc.user_service.enums.RoleEnum;
+import com.github.abeatrizsc.user_service.exceptions.AsaasServiceClientException;
 import com.github.abeatrizsc.user_service.exceptions.RequestException;
 import com.github.abeatrizsc.user_service.exceptions.UserNotFoundException;
 import com.github.abeatrizsc.user_service.exceptions.WrongPasswordException;
+import com.github.abeatrizsc.user_service.feign.asaas.AsaasServiceClient;
+import com.github.abeatrizsc.user_service.feign.asaas.dtos.CustomerRequestDto;
 import com.github.abeatrizsc.user_service.repositories.UserRepository;
 import com.github.abeatrizsc.user_service.security.SecurityConfig;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Optional;
 
@@ -23,6 +28,7 @@ public class UserService {
     private final UserRepository repository;
     private final SecurityConfig securityConfig;
     private final HttpServletRequest request;
+    private final AsaasServiceClient asaasService;
 
     public Optional<User> findUserByEmail(String email) {
         return repository.findByEmail(email);
@@ -47,6 +53,10 @@ public class UserService {
 
             user.setName(updateDto.nameUpdated());
             user.setEmail(updateDto.emailUpdated());
+
+            if (user.getRole() == RoleEnum.PARTICIPANT) {
+                updateAsaasCustomer(user.getCustomerId(), updateDto);
+            }
         }
 
         repository.save(user);
@@ -57,6 +67,10 @@ public class UserService {
     @Transactional
     public void deleteAuthenticatedUser() {
         User user = findUserById(getAuthenticatedUserId());
+
+        if (user.getRole() == RoleEnum.PARTICIPANT) {
+            deleteAsaasCustomer(user.getCustomerId());
+        }
 
         repository.delete(user);
     }
@@ -93,5 +107,28 @@ public class UserService {
         }
 
         return !securityConfig.passwordEncoder().matches(newPassword, userPassword);
+    }
+
+    public void deleteAsaasCustomer(String id) {
+        log.info("deleteAsaasCustomer() started");
+        try {
+            asaasService.deleteAsaasCustomer(id);
+            log.info("deleteAsaasCustomer() ended successfully");
+        } catch (AsaasServiceClientException e) {
+            log.info("CATCH an AsaasServiceClientException in deleteAsaasCustomer(): {}", e.getMessage());
+            throw e;
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new UserNotFoundException();
+        }
+    }
+
+    public void updateAsaasCustomer(String customerId, UpdateUserRequestDto updateDto) {
+        log.info("updateAsaasCustomer() started");
+
+        CustomerRequestDto customerRequest = new CustomerRequestDto(updateDto.nameUpdated(), updateDto.documentUpdated(), updateDto.mobilePhoneUpdated());
+
+        asaasService.updateAsaasCustomer(customerId, customerRequest);
+
+        log.info("updateAsaasCustomer() ended");
     }
 }

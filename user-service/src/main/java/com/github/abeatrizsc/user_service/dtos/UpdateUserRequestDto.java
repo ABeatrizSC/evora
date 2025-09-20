@@ -2,6 +2,7 @@ package com.github.abeatrizsc.user_service.dtos;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateUserRequestDto(
@@ -12,6 +13,11 @@ public record UpdateUserRequestDto(
         String emailUpdated,
         @Size(min = 7, max = 8, message = "Password must be 7 to 8 characters.")
         String passwordUpdated,
-        @NotBlank(message = "Password is required.")
-        String currentPassword)
+        @NotBlank(message = "Current password is required.")
+        @Size(min = 7, max = 8, message = "Password must be 7 to 8 characters.")
+        String currentPassword,
+        @Pattern(regexp = "^[0-9]{11}$|^[0-9]{14}$", message = "Invalid document.")
+        String documentUpdated,
+        @Pattern(regexp = "^[0-9]{10,13}$", message = "Invalid mobile phone.")
+        String mobilePhoneUpdated)
 {}
