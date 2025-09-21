@@ -189,7 +189,7 @@ docker-compose up --build
 {
     "name": "Marcelo Almeida updated",
     "email": "marceloupdated@email.com",
-    "role": "marc123",
+    "role": "PARTICIPANT",
     "customerId": "cus.." // se role == participant
 }
 ```
