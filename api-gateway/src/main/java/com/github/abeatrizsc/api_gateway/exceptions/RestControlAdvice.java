@@ -1,5 +1,6 @@
 package com.github.abeatrizsc.api_gateway.exceptions;
 
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -10,6 +11,11 @@ public class RestControlAdvice {
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<RestErrorMessage> handleSecurityException(SecurityException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RestErrorMessage(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED, e.getMessage()));
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<RestErrorMessage> handleTokenExpiredException(TokenExpiredException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RestErrorMessage(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED, "Session expired. Log in again."));
     }
 
     @ExceptionHandler(Exception.class)
