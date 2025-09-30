@@ -21,10 +21,16 @@ spring:
             - Path=/api/v1/auth/**
           filters:
             - AuthenticationFilter
-        - id: event-service
+        - id: event-service-1
           uri: lb://EVENT-SERVICE
           predicates:
             - Path=/api/v1/events/**
+          filters:
+            - AuthenticationFilter
+        - id: event-service-2
+          uri: lb://EVENT-SERVICE
+          predicates:
+            - Path=/api/v1/tickets/**
           filters:
             - AuthenticationFilter
 eureka:
