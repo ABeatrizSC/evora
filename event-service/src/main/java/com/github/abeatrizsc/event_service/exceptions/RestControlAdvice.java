@@ -44,6 +44,25 @@ public class RestControlAdvice {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RestErrorMessageDto(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED, e.getMessage()));
     }
 
+    @ExceptionHandler(AsaasServiceClientException.class)
+    public ResponseEntity<RestErrorMessageDto> handleAsaasServiceClientException(AsaasServiceClientException e) {
+        HttpStatus status;
+
+        try {
+            status = HttpStatus.valueOf(e.getStatus());
+        } catch (Exception ex) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+
+        RestErrorMessageDto body = new RestErrorMessageDto(
+                status.value(),
+                status,
+                e.getDescription()
+        );
+
+        return ResponseEntity.status(status).body(body);
+    }
+
     @ExceptionHandler(RequestException.class)
     public ResponseEntity<RestErrorMessageDto> handleRequestException(RequestException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new RestErrorMessageDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));

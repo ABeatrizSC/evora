@@ -1,5 +1,6 @@
 package com.github.abeatrizsc.event_service.specifications;
 
+import com.github.abeatrizsc.event_service.domain.Address_;
 import com.github.abeatrizsc.event_service.domain.Event;
 import com.github.abeatrizsc.event_service.domain.Event_;
 import com.github.abeatrizsc.event_service.enums.EventCategoryEnum;
@@ -42,7 +43,7 @@ public class EventSpec {
             if (ObjectUtils.isEmpty(city)) {
                 return null;
             }
-            return builder.equal(root.join(Event_.ADDRESS).get("city"), city);
+            return builder.equal(root.join(Event_.ADDRESS).get(Address_.CITY), city);
         };
     }
 
@@ -51,7 +52,7 @@ public class EventSpec {
             if (ObjectUtils.isEmpty(state)) {
                 return null;
             }
-            return builder.equal(root.join(Event_.ADDRESS).get("state"), state);
+            return builder.equal(root.join(Event_.ADDRESS).get(Address_.STATE), state);
         };
     }
 

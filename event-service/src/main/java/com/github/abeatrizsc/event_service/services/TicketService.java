@@ -4,12 +4,16 @@ import com.github.abeatrizsc.event_service.domain.Event;
 import com.github.abeatrizsc.event_service.domain.Ticket;
 import com.github.abeatrizsc.event_service.dtos.TicketResponseDto;
 import com.github.abeatrizsc.event_service.enums.RoleEnum;
-import com.github.abeatrizsc.event_service.enums.StatusEnum;
 import com.github.abeatrizsc.event_service.exceptions.CancellationTicketPurchaseException;
 import com.github.abeatrizsc.event_service.exceptions.NotFoundException;
 import com.github.abeatrizsc.event_service.exceptions.UnauthorizedActionException;
+import com.github.abeatrizsc.event_service.feign.asaas.dtos.CreateChargeResponseDto;
+import com.github.abeatrizsc.event_service.feign.asaas.dtos.PurchaseResponseDto;
+import com.github.abeatrizsc.event_service.feign.userService.UserServiceClient;
+import com.github.abeatrizsc.event_service.feign.userService.dtos.UserResponseDto;
 import com.github.abeatrizsc.event_service.mappers.TicketMapper;
 import com.github.abeatrizsc.event_service.repositories.TicketRepository;
+import com.github.abeatrizsc.event_service.specifications.queryFilters.TicketQueryFilter;
 import com.github.abeatrizsc.event_service.utils.AuthRequestUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +24,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -29,30 +33,40 @@ import java.time.LocalDateTime;
 public class TicketService {
     private final TicketRepository repository;
     private final EventService eventService;
+    private final PurchaseService purchaseService;
     private final AuthRequestUtils authRequestUtils;
+    private final UserServiceClient userClient;
     private final TicketMapper ticketMapper;
 
     @Transactional
-    public String createEventTicketPurchase(String eventId) {
+    public CreateChargeResponseDto createEventTicketPurchase(String eventId) {
         log.info("createEventTicketPurchase() started with id {}", eventId);
 
         checkUserRole();
 
-        String participantId = authRequestUtils.getAuthenticatedUserId();
-
         Event event = eventService.getEventById(eventId);
+        UserResponseDto authenticatedUser = userClient.getAuthenticatedUserInfo();
+
+        PurchaseResponseDto purchaseResponse = null;
+
+        if (event.getTicketPrice().compareTo(BigDecimal.ZERO) > 0) {
+            purchaseResponse = purchaseService.createTicketPurchase(
+                    event.getTicketPrice(),
+                    authenticatedUser.customerId()
+            );
+        }
 
         Ticket newTicket = new Ticket();
-        newTicket.setParticipantId(participantId);
+        newTicket.setParticipantId(authenticatedUser.id());
         newTicket.setEvent(event);
-        newTicket.setPurchasedAt(LocalDateTime.now());
+        newTicket.setPurchase(purchaseResponse != null ? purchaseResponse.purchase() : null);
         newTicket.setCode(generateUniqueCode());
 
         repository.save(newTicket);
 
-        log.info("createEventTicketPurchase() ended");
+        log.info("createEventTicketPurchase() - ticket saved");
 
-        return "Asaas payment link";
+        return purchaseResponse != null ? purchaseResponse.chargeResponseDto() : null;
     }
 
     @Transactional
@@ -63,12 +77,9 @@ public class TicketService {
 
         Ticket ticket = getTicketByIdAndParticipantId(ticketId);
 
-        if (LocalDate.now().isBefore(ticket.getEvent().getDate()) && ticket.getStatus() != StatusEnum.CANCELLED) {
-            //refund
+        if (LocalDate.now().isBefore(ticket.getEvent().getDate())) {
+            purchaseService.cancelTicketPurchase(ticket.getPurchase().getCode());
             //update event vacancies
-            //set LocalDateTime cancelledAt
-            ticket.setStatus(StatusEnum.CANCELLED);
-            repository.save(ticket);
 
             log.info("cancelEventTicketPurchase() ended");
             return "Ticket id: " + ticketId + " cancelled successfully";
@@ -92,6 +103,8 @@ public class TicketService {
     }
 
     public String generateUniqueCode() {
+        log.info("Generating ticket unique code");
+
         String uniqueCode;
 
         do {
@@ -107,12 +120,13 @@ public class TicketService {
         return repository.findByIdAndParticipantId(ticketId, participantId).orElseThrow(() -> new NotFoundException("Ticket"));
     }
 
-    public Page<TicketResponseDto> getAllTicketsByAuthenticatedUser(int page, int items) {
-        String participantId = authRequestUtils.getAuthenticatedUserId();
-        Pageable pageable = PageRequest.of(page, items);
+    public Page<TicketResponseDto> getAllTicketsByAuthenticatedUser(TicketQueryFilter ticketFilter) {
+        Pageable pageable = PageRequest.of(ticketFilter.getPage(), ticketFilter.getItems());
+        String userId = authRequestUtils.getAuthenticatedUserId();
+        ticketFilter.setUserId(userId);
 
         return repository
-                .findAllByParticipantId(participantId, pageable)
+                .findAll(ticketFilter.toEspecification(), pageable)
                 .map(ticketMapper::convertEntityToResponseDto);
     }
 }

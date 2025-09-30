@@ -9,7 +9,7 @@ import com.github.abeatrizsc.event_service.dtos.ViaCepResponseDto;
 import com.github.abeatrizsc.event_service.enums.RoleEnum;
 import com.github.abeatrizsc.event_service.exceptions.NotFoundException;
 import com.github.abeatrizsc.event_service.exceptions.UnauthorizedActionException;
-import com.github.abeatrizsc.event_service.feign.ViaCepServiceClient;
+import com.github.abeatrizsc.event_service.feign.viacep.ViaCepServiceClient;
 import com.github.abeatrizsc.event_service.mappers.AddressMapper;
 import com.github.abeatrizsc.event_service.mappers.EventMapper;
 import com.github.abeatrizsc.event_service.repositories.AddressRepository;
