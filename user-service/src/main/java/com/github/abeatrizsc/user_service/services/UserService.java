@@ -61,7 +61,7 @@ public class UserService {
 
         repository.save(user);
 
-        return new UserResponseDto(user.getName(), user.getEmail(), user.getRole(), user.getCustomerId());
+        return new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getCustomerId());
     }
 
     @Transactional
@@ -90,7 +90,7 @@ public class UserService {
     public UserResponseDto getAuthenticatedUserInfo() {
         User user = findUserById(getAuthenticatedUserId());
 
-        return new UserResponseDto(user.getName(), user.getEmail(), user.getRole(), user.getCustomerId());
+        return new UserResponseDto(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getCustomerId());
     }
 
     public Boolean isProvidedPasswordCorrect(String providedPassword, String userPassword) {

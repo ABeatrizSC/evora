@@ -37,23 +37,20 @@ public class FeignConfig {
         @Override
         public Exception decode(String methodKey, Response response) {
             try {
-                if (response.body() != null) {
-                    AsaasExceptionResponseDto errorResponse =
-                            mapper.readValue(response.body().asInputStream(), AsaasExceptionResponseDto.class);
+                AsaasExceptionResponseDto errorResponse =
+                        mapper.readValue(response.body().asInputStream(), AsaasExceptionResponseDto.class);
 
-                    AsaasErrorResponseDto error = errorResponse.errors().get(0);
+                AsaasErrorResponseDto error = errorResponse.errors().get(0);
 
-                    log.info("Create and returns a AsaasServiceClientException() successfully.");
-                    return new AsaasServiceClientException(error.code(), error.description());
-                } else {
-                    log.info("Asaas returned status " + response.status() + " with no body");
+                log.info("Create and returns a AsaasServiceClientException() successfully.");
+                return new AsaasServiceClientException(response.status(), error.description());
 
-                    return new RuntimeException();
-                }
             } catch (Exception e) {
                 log.info("An UNEXPECTED error occurred while trying to create an AsaasServiceClientException: {}", e.getMessage());
 
-                return new RuntimeException("An error ocurred while trying create a customer account. Please, try again.");
+                log.info("Asaas returned {}", response.status(), " with no body.");
+
+                return new RuntimeException();
             }
         }
     }

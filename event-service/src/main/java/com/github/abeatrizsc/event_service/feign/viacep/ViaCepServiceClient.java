@@ -1,4 +1,4 @@
-package com.github.abeatrizsc.event_service.feign;
+package com.github.abeatrizsc.event_service.feign.viacep;
 
 import com.github.abeatrizsc.event_service.dtos.ViaCepResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;

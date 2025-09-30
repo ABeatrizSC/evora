@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -78,20 +77,30 @@ public class RestControlAdvice {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new RestErrorMessageDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
     }
 
-    @ExceptionHandler(AsaasServiceClientException.class)
-    public ResponseEntity<RestErrorMessageDto> handleAsaasServiceClientException(AsaasServiceClientException e) {
-        Map<String, Object> body = Map.of(
-                "error", e.getCode(),
-                "message", e.getDescription()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RestErrorMessageDto(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST, body.get("message").toString()));
-    }
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RestErrorMessageDto> handleGeneric(Exception e) {
         log.error(String.valueOf(e));
         log.error("Generic handler caught exception: {}", e.getClass().getName(), e);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new RestErrorMessageDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again."));
+    }
+
+    @ExceptionHandler(AsaasServiceClientException.class)
+    public ResponseEntity<RestErrorMessageDto> handleAsaasServiceClientException(AsaasServiceClientException e) {
+        HttpStatus status;
+
+        try {
+            status = HttpStatus.valueOf(e.getStatus());
+        } catch (Exception ex) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+
+        RestErrorMessageDto body = new RestErrorMessageDto(
+                status.value(),
+                status,
+                e.getDescription()
+        );
+
+        return ResponseEntity.status(status).body(body);
     }
 }

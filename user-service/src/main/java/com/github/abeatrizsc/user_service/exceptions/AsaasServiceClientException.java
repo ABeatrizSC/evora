@@ -4,12 +4,12 @@ import lombok.Getter;
 
 @Getter
 public class AsaasServiceClientException extends RuntimeException {
-    private final String code;
+    private final int status;
     private final String description;
 
-    public AsaasServiceClientException(String code, String description) {
+    public AsaasServiceClientException(int status, String description) {
         super(description);
-        this.code = code;
+        this.status = status;
         this.description = description;
     }
 }
